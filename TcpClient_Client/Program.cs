@@ -10,51 +10,37 @@ namespace TcpClient_Client
 {
     internal class Program
     {
+        /// <summary>
+        /// メイン処理
+        /// </summary>
+        /// <param name="args">引数: ip port</param>
         static void Main(string[] args)
         {
-            // サーバのIPアドレスとポートを設定
-            IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
-            int port = 12345;
+            Client client = new Client();
+            Task t1 = Task.Run(() => {
+                client.client_exe(args);
+            });
 
-            TcpClient client = new TcpClient();
-
-            try
+            while (true)
             {
-                // サーバに接続
-                client.Connect(ipAddress, port);
-                Console.WriteLine("サーバに接続しました。");
-
-                // ネットワークストリームを取得
-                NetworkStream stream = client.GetStream();
-
-                while (true)
+                if (t1.IsCompleted)
                 {
-                    // メッセージの入力
-                    Console.Write("メッセージを入力してください (exitで終了): ");
-                    string message = Console.ReadLine();
-
-                    if (message == "exit")
-                        break;
-
-                    // メッセージをサーバに送信
-                    byte[] data = Encoding.ASCII.GetBytes(message);
-                    stream.Write(data, 0, data.Length);
-
-                    // サーバからの応答を受信
-                    data = new byte[1024];
-                    int bytesRead = stream.Read(data, 0, data.Length);
-                    string receivedMessage = Encoding.ASCII.GetString(data, 0, bytesRead);
-                    Console.WriteLine("サーバからの応答: " + receivedMessage);
+                    Console.WriteLine("タスクが正常終了しました。\n");
+                    break;
+                }
+                if(t1.IsFaulted)
+                {
+                    Console.WriteLine("タスクが異常終了しました。IsFaulted : "+t1.Exception.Message);
+                    break;
+                }
+                if(t1.IsCanceled)
+                {
+                    Console.WriteLine("タスクが取り消されました。IsCanceled");
+                    break;
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("エラー: " + ex.Message);
-            }
-            finally
-            {
-                client.Close();
-            }
+
         }
+
     }
 }
